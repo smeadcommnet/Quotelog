@@ -1,0 +1,32 @@
+select SO.NUM as "SO",
+    CUSTOMER.NAME as "Customer",
+    SO.SALESMAN as "SalesPerson",
+    SO.DATECREATED as "date created",
+    SO.DATEFIRSTSHIP as "date Scheduled",
+    cast ('NOW' as date) as "today",
+    sum(SOITEM.TOTALPRICE) as "Amt",
+    count(SOITEM.PRODUCTID) as "lines",
+    CONTACT.DATES as "Last Contact",
+    CHANCE.PERCENT as "Odds of Job",
+    STATUS.INFO as "Quote Status"
+from SO
+    left join SOITEM on SOITEM.SOID = SO.ID
+    left join CUSTOMER on SO.CUSTOMERID = CUSTOMER.ID
+    left join (select CUSTOMTIMESTAMP.RECORDID as "RECORD",
+                      CUSTOMTIMESTAMP.INFO as "DATES"
+               from CUSTOMTIMESTAMP
+               where CUSTOMTIMESTAMP.CUSTOMFIELDID = 79) as "CONTACT" on CONTACT.RECORD = SO.ID
+    left join (select CUSTOMSET.INFO as "PERCENT",
+                                     CUSTOMSET.RECORDID as "RECORD"
+                              from CUSTOMSET
+                              where CUSTOMSET.CUSTOMFIELDID = 75) as "CHANCE" on CHANCE.RECORD = SO.ID
+    left join (select CUSTOMSET.INFO as "INFO",
+                      CUSTOMSET.RECORDID as "RECORD"
+               from CUSTOMSET
+               where CUSTOMSET.CUSTOMFIELDID = 81) as "STATUS" on STATUS.RECORD = SO.ID
+where SO.DATEFIRSTSHIP < cast('now' as date) + 90
+    and SO.DATEFIRSTSHIP > cast('now' as date) - 90
+    and SO.STATUSID = 10
+    and SOITEM.TYPEID in (10,11,12,20,21)
+Group by SO.NUM, CUSTOMER.NAME, SO.SALESMAN, SO.DATECREATED, SO.DATEFIRSTSHIP, "Last Contact", "Quote Status", "Odds of Job"
+order by SO.DATEFIRSTSHIP
